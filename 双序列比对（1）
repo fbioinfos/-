@@ -1,0 +1,102 @@
+class DoubleAlign:
+    def __init__(self,li_a,li_b):
+        self.li_a = li_a
+        self.li_b = li_b
+        self.rlen = len(li_a)
+        self.clen = len(li_b)
+        # 初始化得分矩阵
+        self.score_mat = [[0 for _ in range(self.clen+1)] for _ in range(self.rlen+1)]
+        
+    def dou_align(self):
+        for i in range(self.rlen+1):
+            for j in range(self.clen+1):
+                # 第一行及第一列得分为0
+                if i==0 or j==0:
+                    self.score_mat[i][j] = 0
+                else:
+                    # 对应位置的字符比对
+                    if self.li_a[i-1] == self.li_b[j-1]:
+                        a2b_ali_sco = self.score_mat[i-1][j-1] + 2
+                    else:
+                        a2b_ali_sco = self.score_mat[i-1][j-1] - 1
+                    # 行上的字符缺失
+                    rmis_sco = self.score_mat[i][j-1] - 1
+                    # 列上的字符缺失
+                    cmis_sco = self.score_mat[i-1][j] - 1
+                    self.score_mat[i][j] = max(a2b_ali_sco,rmis_sco,cmis_sco)
+                
+    # 走到这说明得分矩阵已填满，开始寻找最优路径
+    # 只用倒序寻找m行n列，因为第一行和第一列的得分为0
+    def rlist_back_trace(self):
+        result = []
+        if self.rlen <= 0 or self.clen <= 0:
+            return []
+
+        current = self.score_mat[self.rlen][self.clen]
+
+        # 优先检查是否来自左上角（匹配）
+        if self.rlen > 0 and self.clen > 0 and current == self.score_mat[self.rlen - 1][self.clen - 1] + (
+        2 if self.li_a[self.rlen - 1] == self.li_b[self.clen - 1] else -1):
+            result.append(self.li_a[self.rlen - 1])
+            self.rlen -= 1
+            self.clen -= 1
+            result.extend(self.rlist_back_trace())
+        # 检查是否来自左边（行上字符缺失，插入 gap）
+        elif self.clen > 0 and current == self.score_mat[self.rlen][self.clen - 1] - 1:
+            result.append('-')
+            self.clen -= 1
+            result.extend(self.rlist_back_trace())
+        # 检查是否来自上边（列上字符缺失，删除 gap）
+        elif self.rlen > 0 and current == self.score_mat[self.rlen - 1][self.clen] - 1:
+            result.append(self.li_a[self.rlen - 1])
+            self.rlen -= 1
+            result.extend(self.rlist_back_trace())
+        return result
+
+    def clist_back_trace(self):
+        if self.rlen <= 0 or self.clen <= 0:
+            return []
+        result = []
+
+        current = self.score_mat[self.rlen][self.clen]
+
+        # 优先检查是否来自左上角（匹配）
+        if self.rlen > 0 and self.clen > 0 and current == self.score_mat[self.rlen - 1][self.clen - 1] + (
+        2 if self.li_a[self.rlen - 1] == self.li_b[self.clen - 1] else -1):
+            result.append(self.li_b[self.clen - 1],)
+            self.rlen -= 1
+            self.clen -= 1
+            result.extend(self.clist_back_trace())
+        # 检查是否来自上边（列上字符缺失，插入 gap）
+        elif self.rlen > 0 and current == self.score_mat[self.rlen - 1][self.clen] - 1:
+            result.append('-',)
+            self.rlen -= 1
+            result.extend(self.clist_back_trace())
+        # 检查是否来自左边（行上字符缺失，删除 gap）
+        elif self.clen > 0 and current == self.score_mat[self.rlen][self.clen - 1] - 1:
+            result.append(self.li_b[self.clen - 1],)
+            self.clen -= 1
+            result.extend(self.clist_back_trace())
+        return result
+
+    def back_trace(self):
+        seq_a = self.rlist_back_trace()
+        print(f'seq_a:', end="")
+        for i in range(len(seq_a)-1,-1,-1):
+            print(seq_a[i],end="")
+        print()
+        self.rlen = len(self.li_a)
+        self.clen = len(self.li_b)
+        seq_b = self.clist_back_trace()
+        print(f'seq_b:', end="")
+        for i in range(len(seq_b)-1,-1,-1):
+            print(seq_b[i],end="")
+
+if __name__ == "__main__":
+    # 匹配+2，非匹配-1，若对角线和其他得分一致，则优先走对角线
+    li_a = ['A','G','T','C']
+    li_b = ['A','G','T','C']
+    da = DoubleAlign(li_a,li_b)
+    # 打印双序列比对结果
+    da.dou_align()
+    da.back_trace()
